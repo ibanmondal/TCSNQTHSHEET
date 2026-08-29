@@ -28,6 +28,8 @@ export interface Problem {
 interface TrackerState {
   problems: Problem[];
   dailyTarget: number;
+  targetTimelineDays: number;
+  timelineStartDate: string;
   theme: 'dark' | 'light';
   groqApiKey: string;
   aiCache: Record<number, string>;
@@ -38,6 +40,7 @@ interface TrackerState {
   updateNotes: (id: number, notes: string) => void;
   saveCode: (id: number, code: string) => void;
   setDailyTarget: (target: number) => void;
+  setTargetTimeline: (days: number, startDate?: string) => void;
   setTheme: (theme: 'dark' | 'light') => void;
   setGroqApiKey: (key: string) => void;
   saveAiIntuition: (problemId: number, intuition: string) => void;
@@ -64,11 +67,19 @@ export const useTrackerStore = create<TrackerState>()(
     (set) => ({
       problems: initializeProblems(),
       dailyTarget: 3,
+      targetTimelineDays: 30,
+      timelineStartDate: new Date().toISOString(),
       theme: 'dark',
       groqApiKey: '',
       aiCache: {},
       globalScratchpad: '',
       generatedProblems: {},
+      
+      setTargetTimeline: (days, startDate) =>
+        set((state) => ({
+          targetTimelineDays: days,
+          timelineStartDate: startDate || state.timelineStartDate || new Date().toISOString()
+        })),
       
       importProblems: (newProblems) => 
         set((state) => {

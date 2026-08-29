@@ -16,6 +16,7 @@ import {
   Layers
 } from 'lucide-react';
 import { LeetCodeProgressCard } from '../components/LeetCodeProgressCard';
+import { TimelineGoalCard } from '../components/TimelineGoalCard';
 
 export function Dashboard() {
   const { problems, dailyTarget } = useTrackerStore();
@@ -170,6 +171,9 @@ export function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Target Timeline Goal Bar Card */}
+      <TimelineGoalCard />
 
       {/* LeetCode Difficulty Solved Card & Mapped Stats */}
       <div className="grid gap-6 md:grid-cols-2">

@@ -3,9 +3,22 @@ import { useTrackerStore } from '../store/useTrackerStore';
 import { Download, Upload, Trash2, Moon, Sun, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Key } from 'lucide-react';
 
 export function Settings() {
-  const { problems, dailyTarget, theme, groqApiKey, setDailyTarget, setTheme, setGroqApiKey, importProblems, resetProgress } = useTrackerStore();
+  const { 
+    problems, 
+    dailyTarget, 
+    targetTimelineDays,
+    theme, 
+    groqApiKey, 
+    setDailyTarget, 
+    setTargetTimeline,
+    setTheme, 
+    setGroqApiKey, 
+    importProblems, 
+    resetProgress 
+  } = useTrackerStore();
   
   const [localTarget, setLocalTarget] = useState(dailyTarget.toString());
+  const [localTimeline, setLocalTimeline] = useState(targetTimelineDays.toString());
   const [localApiKey, setLocalApiKey] = useState(groqApiKey || '');
   const [showApiKey, setShowApiKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
@@ -180,10 +193,41 @@ export function Settings() {
                 min="1"
                 value={localTarget}
                 onChange={(e) => setLocalTarget(e.target.value)}
-                className="w-20 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+                className="w-20 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none font-mono"
               />
               <button 
                 onClick={handleSaveTarget}
+                className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90"
+              >
+                <Save className="h-4 w-4" /> Save
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-t border-border">
+            <div>
+              <p className="font-medium">Completion Timeline Goal</p>
+              <p className="text-sm text-muted-foreground">Total target days to finish all 100 DSA problems.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={localTimeline}
+                onChange={(e) => setLocalTimeline(e.target.value)}
+                className="w-20 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none font-mono"
+              />
+              <button 
+                onClick={() => {
+                  const val = parseInt(localTimeline, 10);
+                  if (!isNaN(val) && val >= 1 && val <= 365) {
+                    setTargetTimeline(val);
+                    alert(`Timeline goal updated to ${val} days!`);
+                  } else {
+                    alert('Please enter a valid number of days (1 - 365).');
+                  }
+                }}
                 className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90"
               >
                 <Save className="h-4 w-4" /> Save
