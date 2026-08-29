@@ -109,16 +109,19 @@ export function Workspace() {
   // We store the pyodide instance in a ref so it persists across renders
   const pyodideRef = useRef<any>(null);
 
-  // Initialize Code
+  // Initialize Code only when problemId changes
   useEffect(() => {
-    if (problem) {
-      if (problem.savedCode) {
-        setCode(problem.savedCode);
+    const currentProblem = problems.find(p => p.id === problemId);
+    if (currentProblem) {
+      if (currentProblem.savedCode !== undefined) {
+        setCode(currentProblem.savedCode);
+      } else if (generatedProblems[problemId]?.boilerplate) {
+        setCode(generatedProblems[problemId].boilerplate);
       } else {
         setCode(`def solve():\n    # Write your code here\n    pass\n\nprint("Result:", solve())`);
       }
     }
-  }, [problem]);
+  }, [problemId]);
 
   // Load Pyodide script dynamically
   useEffect(() => {
