@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTrackerStore } from '../store/useTrackerStore';
-import { Download, Upload, Trash2, Moon, Sun, Save } from 'lucide-react';
+import { Download, Upload, Trash2, Moon, Sun, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Key } from 'lucide-react';
 
 export function Settings() {
   const { problems, dailyTarget, theme, groqApiKey, setDailyTarget, setTheme, setGroqApiKey, importProblems, resetProgress } = useTrackerStore();
   
   const [localTarget, setLocalTarget] = useState(dailyTarget.toString());
   const [localApiKey, setLocalApiKey] = useState(groqApiKey || '');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
+  const [testMessage, setTestMessage] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  useEffect(() => {
+    if (groqApiKey) {
+      setLocalApiKey(groqApiKey);
+    }
+  }, [groqApiKey]);
 
   const handleSaveTarget = () => {
     const val = parseInt(localTarget);
@@ -21,8 +30,40 @@ export function Settings() {
   };
 
   const handleSaveApiKey = () => {
-    setGroqApiKey(localApiKey.trim());
-    alert('Groq API Key saved successfully!');
+    const trimmed = localApiKey.trim();
+    setGroqApiKey(trimmed);
+    setTestStatus('idle');
+    setTestMessage('');
+    alert(trimmed ? 'Groq API Key saved forever in browser storage!' : 'API Key cleared.');
+  };
+
+  const handleTestApiKey = async () => {
+    const keyToTest = localApiKey.trim() || groqApiKey || import.meta.env.VITE_GROQ_API_KEY;
+    if (!keyToTest) {
+      setTestStatus('invalid');
+      setTestMessage('Please enter an API key first.');
+      return;
+    }
+
+    setTestStatus('testing');
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${keyToTest}`
+        }
+      });
+
+      if (res.ok) {
+        setTestStatus('valid');
+        setTestMessage('API Key is valid and working with Groq!');
+      } else {
+        setTestStatus('invalid');
+        setTestMessage(`Invalid API Key (HTTP ${res.status}). Check console for details.`);
+      }
+    } catch (err: any) {
+      setTestStatus('invalid');
+      setTestMessage(`Connection error: ${err.message || String(err)}`);
+    }
   };
 
   const exportJSON = () => {
@@ -152,31 +193,76 @@ export function Settings() {
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
-          <h2 className="text-xl font-semibold">AI Integration</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              AI Integration (Groq)
+            </h2>
+            {groqApiKey ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Saved & Active Forever
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <AlertCircle className="h-3.5 w-3.5" />
+                No Key Configured
+              </span>
+            )}
+          </div>
           
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-border">
-            <div>
-              <p className="font-medium">Groq API Key</p>
-              <p className="text-sm text-muted-foreground">
-                Enter your free API key from <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">console.groq.com</a> to enable AI Intuitions.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            Enter your free API key from <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">console.groq.com</a>. Once saved, it will be stored securely in your browser's persistent storage forever and used for all AI features (intuitions, solutions, and custom problem generation).
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="relative flex-1">
               <input
-                type="password"
+                type={showApiKey ? "text" : "password"}
                 placeholder="gsk_..."
                 value={localApiKey}
                 onChange={(e) => setLocalApiKey(e.target.value)}
-                className="w-full sm:w-64 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none pr-10"
               />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                title={showApiKey ? "Hide Key" : "Show Key"}
+              >
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button 
                 onClick={handleSaveApiKey}
-                className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 shrink-0"
+                className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity"
               >
-                <Save className="h-4 w-4" /> Save
+                <Save className="h-4 w-4" /> Save Key
+              </button>
+
+              <button 
+                onClick={handleTestApiKey}
+                disabled={testStatus === 'testing'}
+                className="flex items-center gap-1.5 bg-muted text-foreground hover:bg-muted/80 px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {testStatus === 'testing' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Test Key
               </button>
             </div>
           </div>
+
+          {testMessage && (
+            <div className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2 border ${
+              testStatus === 'valid' 
+                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                : 'bg-red-500/10 text-red-500 border-red-500/20'
+            }`}>
+              {testStatus === 'valid' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+              <span>{testMessage}</span>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
