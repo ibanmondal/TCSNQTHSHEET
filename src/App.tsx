@@ -8,6 +8,7 @@ import { Calendar } from './pages/Calendar';
 import { Statistics } from './pages/Statistics';
 import { Settings } from './pages/Settings';
 import { Workspace } from './pages/Workspace';
+import { Resources } from './pages/Resources';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="problems" element={<Problems />} />
+          <Route path="resources" element={<Resources />} />
           <Route path="today" element={<Today />} />
           <Route path="revision" element={<Revision />} />
           <Route path="calendar" element={<Calendar />} />

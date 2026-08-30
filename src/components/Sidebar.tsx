@@ -11,7 +11,8 @@ import {
   Flame, 
   Moon, 
   Sun,
-  Sparkles
+  Sparkles,
+  FolderDown
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTrackerStore } from '../store/useTrackerStore';
@@ -20,6 +21,7 @@ import { calculateStats } from '../lib/stats';
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Problems', href: '/problems', icon: ListTodo, badge: '100' },
+  { name: 'Resources Vault', href: '/resources', icon: FolderDown, badge: '69' },
   { name: 'Today\'s Goal', href: '/today', icon: CalendarDays },
   { name: 'Revision', href: '/revision', icon: RefreshCw },
   { name: 'Study Log', href: '/calendar', icon: BookOpen },
