@@ -25,6 +25,15 @@ export interface Problem {
   savedCode?: string;
 }
 
+export interface NotebookCell {
+  id: string;
+  type: 'code' | 'markdown';
+  content: string;
+  output?: string;
+  executionCount?: number | null;
+  status?: 'idle' | 'running' | 'success' | 'error';
+}
+
 interface TrackerState {
   problems: Problem[];
   dailyTarget: number;
@@ -39,6 +48,8 @@ interface TrackerState {
   addRevisionRecord: (id: number) => void;
   updateNotes: (id: number, notes: string) => void;
   saveCode: (id: number, code: string) => void;
+  savedNotebooks: Record<number, NotebookCell[]>;
+  saveNotebook: (problemId: number, cells: NotebookCell[]) => void;
   setDailyTarget: (target: number) => void;
   setTargetTimeline: (days: number, startDate?: string) => void;
   setTheme: (theme: 'dark' | 'light') => void;
@@ -74,6 +85,12 @@ export const useTrackerStore = create<TrackerState>()(
       aiCache: {},
       globalScratchpad: '',
       generatedProblems: {},
+      savedNotebooks: {},
+      
+      saveNotebook: (problemId, cells) =>
+        set((state) => ({
+          savedNotebooks: { ...state.savedNotebooks, [problemId]: cells }
+        })),
       
       setTargetTimeline: (days, startDate) =>
         set((state) => ({

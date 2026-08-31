@@ -19,16 +19,20 @@ import {
   Code2,
   Terminal,
   Edit3,
-  ExternalLink
+  ExternalLink,
+  BookOpenCheck
 } from 'lucide-react';
 import { getAIPrompt } from '../lib/aiPrompt';
 import { generateProblem } from '../lib/problemGenerator';
 import { cn } from '../lib/utils';
+import { JupyterNotebook } from '../components/JupyterNotebook';
 
 export function Workspace() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const problemId = parseInt(id || '0', 10);
+  
+  const [compilerMode, setCompilerMode] = useState<'notebook' | 'classic'>('notebook');
   
   const { 
     problems, 
@@ -438,6 +442,36 @@ except Exception:
         </div>
         
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Compiler Mode Switcher */}
+          <div className="hidden sm:flex items-center p-0.5 bg-muted/60 border border-border rounded-xl">
+            <button
+              onClick={() => setCompilerMode('notebook')}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
+                compilerMode === 'notebook'
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Interactive Jupyter Notebook with cell-by-cell execution"
+            >
+              <BookOpenCheck className="h-3.5 w-3.5" />
+              <span>Jupyter</span>
+            </button>
+            <button
+              onClick={() => setCompilerMode('classic')}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
+                compilerMode === 'classic'
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Classic single-file script IDE"
+            >
+              <Code2 className="h-3.5 w-3.5" />
+              <span>Classic</span>
+            </button>
+          </div>
+
           <button
             onClick={runCode}
             disabled={!pyodideReady || isRunning}
@@ -492,8 +526,8 @@ except Exception:
             mobileTab === 'editor' ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
           )}
         >
-          <Code2 className="h-3.5 w-3.5" />
-          Python Editor
+          <BookOpenCheck className="h-3.5 w-3.5" />
+          Jupyter Notebook
         </button>
         <button
           onClick={() => setMobileTab('console')}
@@ -527,39 +561,16 @@ except Exception:
 
         {mobileTab === 'editor' && (
           <div className="flex-1 flex flex-col relative h-full">
-            <div className="bg-muted/40 border-b border-border px-4 py-2 flex justify-between items-center z-10">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Python 3 (Pyodide)</span>
-              <button 
-                onClick={() => {
-                  const defaultCode = generatedProblem 
-                    ? generatedProblem.boilerplate 
-                    : `def solve():\n    # Write your code here\n    pass\n\nprint("Result:", solve())`;
-                  setCode(defaultCode);
-                  saveCode(problemId, defaultCode);
-                }}
-                className="p-1 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
-                title="Reset code"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="flex-1 h-full">
-              <Editor
-                height="100%"
-                language="python"
-                theme="vs-dark"
-                value={code}
-                onChange={handleEditorChange}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  lineHeight: 22,
-                  padding: { top: 12 },
-                  scrollBeyondLastLine: false,
-                  smoothScrolling: true,
-                }}
-              />
-            </div>
+            <JupyterNotebook
+              problemId={problemId}
+              initialCode={code}
+              pyodideRef={pyodideRef}
+              pyodideReady={pyodideReady}
+              onCodeChange={(newCode) => {
+                setCode(newCode);
+                saveCode(problemId, newCode);
+              }}
+            />
           </div>
         )}
 
@@ -654,77 +665,90 @@ except Exception:
 
           <PanelResizeHandle className="w-1.5 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
 
-          {/* Right Panel: Editor & Console */}
+          {/* Right Panel: Jupyter Notebook or Classic Editor */}
           <Panel defaultSize={60} minSize={30}>
-            <PanelGroup orientation="vertical">
-              
-              {/* Code Editor */}
-              <Panel defaultSize={70} minSize={20} className="relative">
-                <div className="absolute top-0 left-0 right-0 bg-muted/30 border-b border-border px-4 py-1.5 flex justify-between items-center z-10 backdrop-blur-sm">
-                  <span className="text-xs font-bold text-muted-foreground tracking-wider uppercase">Python 3</span>
-                  <button 
-                    onClick={() => {
-                      const defaultCode = generatedProblem 
-                        ? generatedProblem.boilerplate 
-                        : `def solve():\n    # Write your code here\n    pass\n\nprint("Result:", solve())`;
-                      setCode(defaultCode);
-                      saveCode(problemId, defaultCode);
-                    }}
-                    className="p-1 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
-                    title="Reset to default code"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="pt-8 h-full">
-                  <Editor
-                    height="100%"
-                    language="python"
-                    theme="vs-dark"
-                    value={code}
-                    onChange={handleEditorChange}
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      lineHeight: 24,
-                      padding: { top: 16 },
-                      scrollBeyondLastLine: false,
-                      smoothScrolling: true,
-                    }}
-                  />
-                </div>
-              </Panel>
+            {compilerMode === 'notebook' ? (
+              <JupyterNotebook
+                problemId={problemId}
+                initialCode={code}
+                pyodideRef={pyodideRef}
+                pyodideReady={pyodideReady}
+                onCodeChange={(newCode) => {
+                  setCode(newCode);
+                  saveCode(problemId, newCode);
+                }}
+              />
+            ) : (
+              <PanelGroup orientation="vertical">
+                
+                {/* Code Editor */}
+                <Panel defaultSize={70} minSize={20} className="relative">
+                  <div className="absolute top-0 left-0 right-0 bg-muted/30 border-b border-border px-4 py-1.5 flex justify-between items-center z-10 backdrop-blur-sm">
+                    <span className="text-xs font-bold text-muted-foreground tracking-wider uppercase">Python 3</span>
+                    <button 
+                      onClick={() => {
+                        const defaultCode = generatedProblem 
+                          ? generatedProblem.boilerplate 
+                          : `def solve():\n    # Write your code here\n    pass\n\nprint("Result:", solve())`;
+                        setCode(defaultCode);
+                        saveCode(problemId, defaultCode);
+                      }}
+                      className="p-1 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
+                      title="Reset to default code"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="pt-8 h-full">
+                    <Editor
+                      height="100%"
+                      language="python"
+                      theme="vs-dark"
+                      value={code}
+                      onChange={handleEditorChange}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        lineHeight: 24,
+                        padding: { top: 16 },
+                        scrollBeyondLastLine: false,
+                        smoothScrolling: true,
+                      }}
+                    />
+                  </div>
+                </Panel>
 
-              <PanelResizeHandle className="h-1.5 bg-border hover:bg-primary/50 transition-colors cursor-row-resize" />
+                <PanelResizeHandle className="h-1.5 bg-border hover:bg-primary/50 transition-colors cursor-row-resize" />
 
-              {/* Console Output */}
-              <Panel defaultSize={30} minSize={15} className="bg-[#1e1e1e] flex flex-col">
-                <div className="bg-[#2d2d2d] border-b border-[#3d3d3d] px-4 py-1.5 flex items-center justify-between shrink-0">
-                  <span className="text-xs font-bold text-gray-400 tracking-wider uppercase flex items-center gap-2">
-                    Console Output
-                    {!pyodideReady && (
-                      <span className="text-amber-500 lowercase font-normal flex items-center gap-1.5">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                {/* Console Output */}
+                <Panel defaultSize={30} minSize={15} className="bg-[#1e1e1e] flex flex-col">
+                  <div className="bg-[#2d2d2d] border-b border-[#3d3d3d] px-4 py-1.5 flex items-center justify-between shrink-0">
+                    <span className="text-xs font-bold text-gray-400 tracking-wider uppercase flex items-center gap-2">
+                      Console Output
+                      {!pyodideReady && (
+                        <span className="text-amber-500 lowercase font-normal flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                          </span>
+                          loading python engine...
                         </span>
-                        loading python engine...
-                      </span>
-                    )}
-                  </span>
-                  <button 
-                    onClick={() => setOutput('')} 
-                    className="text-xs text-gray-400 hover:text-white"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <div className="p-4 flex-1 overflow-auto font-mono text-sm text-gray-300 whitespace-pre-wrap custom-scrollbar">
-                  {output || 'No output yet. Click "Run" or "Submit" to execute.'}
-                </div>
-              </Panel>
+                      )}
+                    </span>
+                    <button 
+                      onClick={() => setOutput('')} 
+                      className="text-xs text-gray-400 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="p-4 flex-1 overflow-auto font-mono text-sm text-gray-300 whitespace-pre-wrap custom-scrollbar">
+                    {output || 'No output yet. Click "Run" or "Submit" to execute.'}
+                  </div>
+                </Panel>
 
-            </PanelGroup>
+              </PanelGroup>
+            )}
           </Panel>
 
         </PanelGroup>
