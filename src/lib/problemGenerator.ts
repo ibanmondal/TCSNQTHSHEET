@@ -35,7 +35,12 @@ export const generateProblem = async (problem: Problem, apiKey: string) => {
   const content = data.choices[0].message.content;
   
   try {
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    return {
+      description: (parsed.description || '').replace(/\\n/g, '\n').replace(/\\t/g, '\t'),
+      boilerplate: (parsed.boilerplate || '').replace(/\\n/g, '\n').replace(/\\t/g, '\t'),
+      testScript: (parsed.testScript || '').replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+    };
   } catch (e) {
     console.error("Failed to parse JSON from AI", content);
     throw new Error("AI returned invalid JSON format.");

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { getAIPrompt } from '../lib/aiPrompt';
 import { generateProblem } from '../lib/problemGenerator';
-import { cn } from '../lib/utils';
+import { cn, sanitizeMarkdown } from '../lib/utils';
 import { JupyterNotebook } from '../components/JupyterNotebook';
 
 export function Workspace() {
@@ -325,7 +325,7 @@ except Exception:
               }
             }}
           >
-            {generatedProblem.description}
+            {sanitizeMarkdown(generatedProblem.description)}
           </ReactMarkdown>
         </div>
       ) : (
@@ -414,7 +414,7 @@ except Exception:
                   }
                 }}
               >
-                {aiResponse}
+                {sanitizeMarkdown(aiResponse)}
               </ReactMarkdown>
             </div>
           </div>
